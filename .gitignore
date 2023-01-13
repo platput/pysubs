@@ -1,0 +1,5 @@
+.env
+poetry.lock
+.coverage
+.idea
+.pytest_cache
