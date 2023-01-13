@@ -1,5 +1,3 @@
-import tempfile
-
 from pysubs.utils.interfaces.asr import ASR
 import whisper
 
@@ -15,4 +13,3 @@ class WhisperTranscriber(ASR):
 
     def generate_subtitles(self, processed_data: dict) -> str:
         return processed_data["text"]
-
