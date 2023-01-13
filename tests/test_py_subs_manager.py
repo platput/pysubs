@@ -41,7 +41,8 @@ class TestPySubsManager:
             content=b"",
             source=MediaSource.YOUTUBE,
             file_type=MediaType.MP3,
-            _source_url="https://youtube.com/testvideo"
+            _source_url="https://youtube.com/testvideo",
+            local_storage_path=None
         )
         transcription = get_subtitles_from_audio(audio=audio)
         assert transcription.parent_id == audio.id

@@ -12,6 +12,7 @@ class TestAwsS3MediaManager:
         content=b"",
         source=MediaSource.AWS,
         file_type=MediaType.MP4,
+        local_storage_path=None
     )
 
     def test_init(self):
@@ -27,12 +28,12 @@ class TestAwsS3MediaManager:
         pass
 
 
-def mock_download_from_youtube(*_, **__) -> tuple[str, bytes]:
-    return "test title", b"test content",
+def mock_download_from_youtube(*_, **__) -> tuple[str, bytes, str]:
+    return "test title", b"test content", ""
 
 
-def mock_convert(*_, **__) -> tuple[str, bytes]:
-    return "test title", b"test content",
+def mock_convert(*_, **__) -> tuple[str, bytes, str]:
+    return "test title", b"test content", ""
 
 
 class TestYTMediaManager:
@@ -42,6 +43,7 @@ class TestYTMediaManager:
         content=b"",
         source=MediaSource.YOUTUBE,
         file_type=MediaType.MP4,
+        local_storage_path=None,
         _source_url="https://youtube.com/testvideo"
     )
     mp3_media = Media(
@@ -50,6 +52,7 @@ class TestYTMediaManager:
         content=b"",
         source=MediaSource.YOUTUBE,
         file_type=MediaType.MP3,
+        local_storage_path=None,
         _source_url="https://youtube.com/testvideo"
     )
     unsupported_media = Media(
@@ -58,6 +61,7 @@ class TestYTMediaManager:
         content=b"",
         source=MediaSource.YOUTUBE,
         file_type=MediaType.UNKNOWN,
+        local_storage_path=None,
         _source_url="https://youtube.com/testvideo"
     )
 

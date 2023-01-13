@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 from pysubs.utils.constants import Storage
 from pysubs.utils.exceptions.models import UnspecifiedMediaSourceTypeError
@@ -32,6 +32,7 @@ class Media:
     content: bytes
     source: MediaSource
     file_type: MediaType
+    local_storage_path: Optional[str]
     _source_url: str = ""
 
     @property

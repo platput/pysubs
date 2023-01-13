@@ -22,6 +22,7 @@ def get_audio_from_yt_video(video_url: str) -> Media:
         content=b"",
         source=MediaSource.YOUTUBE,
         file_type=MediaType.UNKNOWN,
+        local_storage_path=None,
         _source_url=video_url
     )
     audio = mgr.convert(media=media, to_type=MediaType.MP3)
