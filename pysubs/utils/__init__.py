@@ -1,3 +1,4 @@
-from pysubs.utils.settings import PySubsSettings
+import logging
 
-PySubsSettings.instance()
+logging.basicConfig(level=logging.INFO)
+

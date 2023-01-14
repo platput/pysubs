@@ -4,7 +4,7 @@ from typing import Optional
 import boto3
 
 from pysubs.utils.constants import EnvConstants
-from pysubs.utils.exceptions.awss3 import S3InvalidUploadSource
+from pysubs.exceptions.awss3 import S3InvalidUploadSource
 from pysubs.utils.settings import PySubsSettings
 
 
