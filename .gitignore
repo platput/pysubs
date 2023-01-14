@@ -3,5 +3,5 @@ poetry.lock
 .coverage
 .idea
 .pytest_cache
-__pycache__
+*__pycache__*
 pysubs/utils/__pycache__

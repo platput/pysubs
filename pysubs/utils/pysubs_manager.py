@@ -84,4 +84,3 @@ def save_transcription_attempt(audio: Media, transcription: Transcription, user:
         fs.upsert_subtitle(ds_subtitle)
     except PermissionDenied as e:
         logger.error(f"Error due to insufficient permissions for adding data to Firestore, error: {e}")
-
