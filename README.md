@@ -14,7 +14,7 @@ coverage run -m pytest -v tests/ && coverage report -m
 
 # Environment
 ```dotenv
-GOOGLE_APPLICATION_CREDENTIALS="/Users/defiant/Projects/Personal/secrets/pysubs-af9fe-79a960deb29b.json"
+GOOGLE_APPLICATION_CREDENTIALS="pysubs.json"
 ```
 
 # Features
