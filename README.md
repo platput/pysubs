@@ -30,4 +30,3 @@ GOOGLE_APPLICATION_CREDENTIALS="/Users/defiant/Projects/Personal/secrets/pysubs-
 - [ ] Add support for direct links of videos
 - [ ] Add support for uploading videos
 - [ ] Increase test coverage
-- 
