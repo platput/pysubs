@@ -9,8 +9,8 @@ from pysubs.dal.firestore import FirestoreDatastore
 from pysubs.utils.auth import decode_token, get_current_user
 from pysubs.utils.constants import LogConstants
 from pysubs.utils.settings import PySubsSettings
-from pysubs.utils.models import GeneralResponse, VideoMetadataResponse, User, GenerationStatusResponse
-from pysubs.utils.pysubs_manager import start_transcribe_worker, get_subtitle_generation_status
+from pysubs.utils.models import GeneralResponse, VideoMetadataResponse, User, SubtitleResponse, HistoryResponse
+from pysubs.utils.pysubs_manager import start_transcribe_worker, get_subtitle_generation_status, get_history
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
@@ -58,14 +58,14 @@ async def get_yt_video_metadata(request: Request, user: User = Depends(decode_to
 async def get_status(
         request: Request,
         user: User = Depends(get_current_user)
-) -> GenerationStatusResponse:
+) -> SubtitleResponse:
     logger.info(f"User found in token: {user}")
     json_data = await request.json()
     video_url = json_data.get("video_url")
     if verify_url(video_url):
         media, subtitle = get_subtitle_generation_status(video_url=video_url, user=user)
         if media and subtitle:
-            return GenerationStatusResponse(
+            return SubtitleResponse(
                 status="OK",
                 subtitle_id=subtitle.id,
                 video_id=media.id,
@@ -77,7 +77,7 @@ async def get_status(
                 created_at=subtitle.created_at
             )
         else:
-            return GenerationStatusResponse(status="pending")
+            return SubtitleResponse(status="pending")
     else:
         raise HTTPException(status_code=403, detail="Invalid URL")
 
@@ -94,6 +94,19 @@ async def generate_subtitles_for_youtube(
         return GeneralResponse(status="OK")
     else:
         raise HTTPException(status_code=403, detail="Invalid URL")
+
+
+@app.post("/history")
+async def generate_subtitles_for_youtube(
+        request: Request,
+        user: User = Depends(get_current_user)
+) -> HistoryResponse:
+    json_data = await request.json()
+    last_created_at = json_data.get("last_created_at")
+    if count := json_data.get("count"):
+        count = int(count)
+    subtitles = get_history(last_created_at=last_created_at, count=count, user=user)
+    return HistoryResponse(status="OK", subtitles=subtitles)
 
 
 def verify_url(url: str):

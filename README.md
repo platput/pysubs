@@ -24,7 +24,7 @@ GOOGLE_APPLICATION_CREDENTIALS="pysubs.json"
 - [x] Add support for detecting language
 - [x] API endpoint for checking subtitle generation status
 - [x] Basic URL verification as a security measure, to be improved later 
-- [ ] Add api endpoint to get history
+- [x] Add api endpoint to get history
 - [ ] Check if the video id already exists before starting to generate the subtitle
 - [ ] Add api endpoints support for subtitle translate option to different languages
 - [ ] Add support for direct links of videos

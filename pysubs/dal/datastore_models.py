@@ -24,6 +24,11 @@ class SubtitleModel(BaseModel):
     expire_at: datetime
 
 
+class MediaSubtitlesModel(BaseModel):
+    media: MediaModel
+    subtitles: list[SubtitleModel]
+
+
 class UserModel(BaseModel):
     id: str
     credits: int

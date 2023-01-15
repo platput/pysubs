@@ -18,15 +18,22 @@ class VideoMetadataResponse(GeneralResponse):
     thumbnail: str
 
 
-class GenerationStatusResponse(GeneralResponse):
+class Subtitle(BaseModel):
     subtitle_id: Optional[str]
-    video_id: Optional[str]
     video_url: Optional[str]
     title: Optional[str]
     video_length: Optional[int]
     thumbnail: Optional[str]
     subtitle: Optional[str]
     created_at: Optional[datetime]
+
+
+class SubtitleResponse(GeneralResponse, Subtitle):
+    pass
+
+
+class HistoryResponse(GeneralResponse):
+    subtitles: list[Subtitle]
 
 
 # Enums

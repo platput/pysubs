@@ -11,7 +11,7 @@ from pysubs.dal.datastore_models import MediaModel, SubtitleModel
 from pysubs.dal.firestore import FirestoreDatastore
 from pysubs.interfaces.asr import ASR
 from pysubs.interfaces.media import MediaManager
-from pysubs.utils.models import Media, MediaSource, MediaType, Transcription, User
+from pysubs.utils.models import Media, MediaSource, MediaType, Transcription, User, Subtitle
 from pysubs.utils.transcriber import WhisperTranscriber
 from pysubs.utils.video import YouTubeMediaManager
 from pysubs.utils.constants import LogConstants
@@ -118,3 +118,25 @@ def get_subtitle_generation_status(video_url: str, user: User) -> tuple[Optional
             return media, subtitle
     else:
         return None, None
+
+
+def get_history(last_created_at: Optional[datetime], count: int, user: User) -> list[Subtitle]:
+    fs = FirestoreDatastore.instance()
+    history = fs.get_history_for_user(user_id=user.id, last_created_at=last_created_at, count=count)
+    resp: list[Subtitle] = []
+    for item in history:
+        media = item.media
+        subtitles = item.subtitles
+        for sub in subtitles:
+            resp.append(
+                Subtitle(
+                    subtitle_id=sub.id,
+                    video_url=media.media_url,
+                    title=media.title,
+                    video_length=media.duration,
+                    thumbnail=media.thumbnail_url,
+                    subtitle=sub.content,
+                    created_at=media.created_at
+                )
+            )
+    return resp

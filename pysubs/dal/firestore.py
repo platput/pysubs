@@ -1,8 +1,11 @@
 import threading
+from datetime import datetime
+from typing import Optional
+
 import firebase_admin
 from firebase_admin import credentials
 from google.cloud import firestore
-from pysubs.dal.datastore_models import MediaModel, SubtitleModel
+from pysubs.dal.datastore_models import MediaModel, SubtitleModel, MediaSubtitlesModel
 from pysubs.interfaces.datastore import Datastore
 from pysubs.utils.settings import PySubsSettings
 
@@ -43,3 +46,37 @@ class FirestoreDatastore(Datastore):
         media = self.db.collection('media').document(media_id).get()
         if media.exists:
             return MediaModel(**media.to_dict())
+
+    def get_history_for_user(
+            self,
+            user_id: str,
+            last_created_at: Optional[datetime] = None,
+            count: int = 100
+    ) -> list[MediaSubtitlesModel]:
+        media_subtitles: list[MediaSubtitlesModel] = []
+        ordered_medias = self.db.collection(
+            'media'
+        ).where(
+            "user_id", "==", user_id
+        ).order_by(
+            "created_at", direction=firestore.Query.DESCENDING
+        )
+        if last_created_at:
+            medias = ordered_medias.start_after({
+                u'created_at': last_created_at
+            }).limit(
+                count
+            ).stream()
+        else:
+            medias = ordered_medias.limit(
+                count
+            ).stream()
+        for m in medias:
+            media: MediaModel = MediaModel(**m.to_dict())
+            subtitles: list[SubtitleModel] = []
+            subtitles_ref = self.db.collection('subtitles').where("media_id", "==", m.id).stream()
+            for sub in subtitles_ref:
+                subtitle: SubtitleModel = SubtitleModel(**sub.to_dict())
+                subtitles.append(subtitle)
+            media_subtitles.append(MediaSubtitlesModel(media=media, subtitles=subtitles))
+        return media_subtitles
