@@ -1,4 +1,4 @@
-from pysubs.utils import PySubsSettings
+from pysubs.utils.settings import PySubsSettings
 
 
 def pytest_configure(config):

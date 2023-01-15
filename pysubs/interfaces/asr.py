@@ -11,3 +11,7 @@ class ASR(metaclass=ABCMeta):
     @abstractmethod
     def generate_subtitles(self, processed_data: dict) -> str:
         pass
+
+    @abstractmethod
+    def get_detected_language(self, processed_data: dict) -> str:
+        pass

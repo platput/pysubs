@@ -33,3 +33,13 @@ class FirestoreDatastore(Datastore):
         subtitle_ref = self.db.collection('subtitles').document(subtitle.id)
         subtitle_ref.set(subtitle.dict())
         return subtitle
+
+    def get_subtitle_for_media(self, media_id: str) -> SubtitleModel:
+        subtitles = self.db.collection('subtitles').where("media_id", "==", media_id).stream()
+        for s in subtitles:
+            return SubtitleModel(**s.to_dict())
+
+    def get_media(self, media_id: str) -> MediaModel:
+        media = self.db.collection('media').document(media_id).get()
+        if media.exists:
+            return MediaModel(**media.to_dict())

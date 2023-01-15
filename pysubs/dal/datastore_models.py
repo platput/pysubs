@@ -19,6 +19,7 @@ class SubtitleModel(BaseModel):
     id: str
     media_id: str
     content: str
+    language: str = "en"
     created_at: datetime
     expire_at: datetime
 

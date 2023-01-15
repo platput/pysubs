@@ -1,10 +1,14 @@
+import hashlib
+import json
 import uuid
+from collections import OrderedDict
 from datetime import timedelta
 
 import pytest
 from pysubs.exceptions.youtube import UnsupportedMediaConversionError
-from pysubs.utils.pysubs_manager import get_audio_from_yt_video, get_subtitles_from_audio
-from pysubs.utils.models import Media, MediaType, MediaSource
+from pysubs.utils.pysubs_manager import get_audio_from_yt_video, get_subtitles_from_audio, generate_transcription_id, \
+    generate_media_id
+from pysubs.utils.models import Media, MediaType, MediaSource, User
 
 
 def mock_download(self, media: Media) -> Media:
@@ -41,7 +45,7 @@ class TestPySubsManager:
             "pysubs.utils.video.YouTubeMediaManager.convert",
             mock_convert
         )
-        media = get_audio_from_yt_video(video_url=video_url)
+        media = get_audio_from_yt_video(video_url=video_url, user=User())
         assert media.file_type == MediaType.MP3
         assert media.source_url == video_url
         assert media.local_storage_path == "/file.mp3"
@@ -67,4 +71,26 @@ class TestPySubsManager:
             thumbnail_url="https://yt.com/be.jpg"
         )
         transcription = get_subtitles_from_audio(audio=audio)
-        assert transcription.parent_id == audio.id
+        assert transcription.media_id == audio.id
+
+    def test_generate_transcription_id(self):
+        media_id = "1234"
+        language = "french"
+        key_helper_dict = OrderedDict({
+            "media_id": media_id,
+            "language": language
+        })
+        key_helper = json.dumps(key_helper_dict).encode("utf-8")
+        key = hashlib.sha256(key_helper).hexdigest()
+        assert key == generate_transcription_id(media_id=media_id, language=language)
+
+    def test_generate_media_id(self):
+        media_url = "https://mediaurl.com"
+        user_id = "1"
+        key_helper_dict = OrderedDict({
+            "media_url": media_url,
+            "user_id": user_id
+        })
+        key_helper = json.dumps(key_helper_dict).encode("utf-8")
+        key = hashlib.sha256(key_helper).hexdigest()
+        assert key == generate_media_id(media_url=media_url, user=User(id=user_id))

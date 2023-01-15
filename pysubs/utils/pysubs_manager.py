@@ -1,7 +1,11 @@
+import hashlib
+import json
 import logging
 import threading
-import uuid
+from collections import OrderedDict
 from datetime import datetime, timedelta
+from typing import Optional
+
 from google.api_core.exceptions import PermissionDenied
 from pysubs.dal.datastore_models import MediaModel, SubtitleModel
 from pysubs.dal.firestore import FirestoreDatastore
@@ -16,7 +20,7 @@ logger = logging.getLogger(LogConstants.LOGGER_NAME)
 
 
 def process_yt_video_url_and_generate_subtitles(video_url: str, user: User):
-    audio = get_audio_from_yt_video(video_url=video_url)
+    audio = get_audio_from_yt_video(video_url=video_url, user=user)
     logger.info(f"Audio generated for the video url: {video_url}")
     transcription = get_subtitles_from_audio(audio=audio)
     logger.info(f"Audio transcription finished for the video url: {video_url}")
@@ -24,10 +28,10 @@ def process_yt_video_url_and_generate_subtitles(video_url: str, user: User):
     logger.info(f"Saved data to datastore.")
 
 
-def get_audio_from_yt_video(video_url: str) -> Media:
+def get_audio_from_yt_video(video_url: str, user: User) -> Media:
     mgr: MediaManager = YouTubeMediaManager()
     media: Media = Media(
-        id=str(uuid.uuid4()),
+        id=generate_media_id(media_url=video_url, user=user),
         title=None,
         content=None,
         duration=None,
@@ -42,14 +46,34 @@ def get_audio_from_yt_video(video_url: str) -> Media:
     return audio
 
 
+def generate_transcription_id(media_id: str, language: str) -> str:
+    key_helper_dict = OrderedDict({
+        "media_id": media_id,
+        "language": language
+    })
+    key_helper = json.dumps(key_helper_dict).encode("utf-8")
+    return hashlib.sha256(key_helper).hexdigest()
+
+
+def generate_media_id(media_url: str, user: User) -> str:
+    key_helper_dict = OrderedDict({
+        "media_url": media_url,
+        "user_id": user.id
+    })
+    key_helper = json.dumps(key_helper_dict).encode("utf-8")
+    return hashlib.sha256(key_helper).hexdigest()
+
+
 def get_subtitles_from_audio(audio: Media) -> Transcription:
     transcriber: ASR = WhisperTranscriber()
     result = transcriber.process_audio(audio=audio)
+    language = transcriber.get_detected_language(processed_data=result)
     content = transcriber.generate_subtitles(processed_data=result)
     return Transcription(
-        id=str(uuid.uuid4()),
+        id=generate_transcription_id(media_id=audio.id, language=language),
         content=content,
-        parent_id=audio.id
+        language=language,
+        media_id=audio.id
     )
 
 
@@ -74,7 +98,7 @@ def save_transcription_attempt(audio: Media, transcription: Transcription, user:
     expire_at = current_time + timedelta(days=10)
     ds_subtitle = SubtitleModel(
         id=transcription.id,
-        media_id=transcription.parent_id,
+        media_id=transcription.media_id,
         content=transcription.content,
         created_at=current_time,
         expire_at=expire_at
@@ -84,3 +108,13 @@ def save_transcription_attempt(audio: Media, transcription: Transcription, user:
         fs.upsert_subtitle(ds_subtitle)
     except PermissionDenied as e:
         logger.error(f"Error due to insufficient permissions for adding data to Firestore, error: {e}")
+
+
+def get_subtitle_generation_status(video_url: str, user: User) -> tuple[Optional[MediaModel], Optional[SubtitleModel]]:
+    media_id = generate_media_id(video_url, user)
+    fs = FirestoreDatastore.instance()
+    if media := fs.get_media(media_id=media_id):
+        if subtitle := fs.get_subtitle_for_media(media_id=media_id):
+            return media, subtitle
+    else:
+        return None, None

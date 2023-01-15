@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from pysubs.utils import PySubsSettings
+from pysubs.utils.settings import PySubsSettings
 
 
 @pytest.fixture(autouse=True)

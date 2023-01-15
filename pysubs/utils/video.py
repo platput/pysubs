@@ -52,7 +52,7 @@ class YouTubeMediaManager(MediaManager):
             raise UnsupportedMediaConversionError(f"Converting to {to_type} is not supported at this moment.")
         converted: ConvertedFile = YouTubeMediaManager._convert_to_mp3(media=media)
         converted_media = Media(
-            id=str(uuid.uuid4()),
+            id=media.id,
             title=media.title,
             content=None,
             duration=media.duration,

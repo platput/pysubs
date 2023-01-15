@@ -14,6 +14,9 @@ class WhisperTranscriber(ASR):
     def process_audio(self, audio: Media) -> dict[str, list | dict]:
         return self.model.transcribe(audio.local_storage_path)
 
+    def get_detected_language(self, processed_data: dict) -> str:
+        return processed_data.get("language")
+
     def generate_subtitles(self, processed_data: dict) -> str:
         content = StringIO()
         write_srt(processed_data["segments"], file=content)

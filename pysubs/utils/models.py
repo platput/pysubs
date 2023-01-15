@@ -1,19 +1,32 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TypedDict, Optional
-from datetime import timedelta
+from typing import Optional
+from datetime import timedelta, datetime
+
+from pydantic import BaseModel
 
 
 # Responses
-class GeneralResponse(TypedDict):
+class GeneralResponse(BaseModel):
     status: str
 
 
 class VideoMetadataResponse(GeneralResponse):
     video_url: str
     title: str
-    video_length: timedelta
-    thumbnail: bytes
+    video_length: int
+    thumbnail: str
+
+
+class GenerationStatusResponse(GeneralResponse):
+    subtitle_id: Optional[str]
+    video_id: Optional[str]
+    video_url: Optional[str]
+    title: Optional[str]
+    video_length: Optional[int]
+    thumbnail: Optional[str]
+    subtitle: Optional[str]
+    created_at: Optional[datetime]
 
 
 # Enums
@@ -50,12 +63,13 @@ class Media:
 class Transcription:
     id: str
     content: str
-    parent_id: str
+    language: str
+    media_id: str
 
 
-@dataclass
-class User:
+class User(BaseModel):
     id: Optional[str]
+    email: Optional[str]
 
 
 @dataclass
