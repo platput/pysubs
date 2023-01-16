@@ -5,7 +5,8 @@ from typing import Optional
 import firebase_admin
 from firebase_admin import credentials
 from google.cloud import firestore
-from pysubs.dal.datastore_models import MediaModel, SubtitleModel, MediaSubtitlesModel
+from pysubs.dal.datastore_models import MediaModel, SubtitleModel, MediaSubtitlesModel, UserModel
+from pysubs.exceptions.firestore import UserNotFoundError
 from pysubs.interfaces.datastore import Datastore
 from pysubs.utils.settings import PySubsSettings
 
@@ -32,10 +33,23 @@ class FirestoreDatastore(Datastore):
         media_ref.set(media.dict())
         return media
 
+    def upsert_user(self, user: UserModel) -> UserModel:
+        user_ref = self.db.collection('users').document(user.id)
+        user_ref.set(user.dict(), merge=True)
+        return user
+
     def upsert_subtitle(self, subtitle: SubtitleModel) -> SubtitleModel:
         subtitle_ref = self.db.collection('subtitles').document(subtitle.id)
         subtitle_ref.set(subtitle.dict())
         return subtitle
+
+    def get_user(self, user_id: str) -> Optional[UserModel]:
+        user_ref = self.db.collection('users').document(user_id)
+        user = user_ref.get()
+        if user.exists:
+            return UserModel(**user.to_dict())
+        else:
+            raise UserNotFoundError(f"User with id: {user_id} was not found in firestore.")
 
     def get_subtitle_for_media(self, media_id: str) -> SubtitleModel:
         subtitles = self.db.collection('subtitles').where("media_id", "==", media_id).stream()

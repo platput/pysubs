@@ -32,4 +32,6 @@ class MediaSubtitlesModel(BaseModel):
 class UserModel(BaseModel):
     id: str
     credits: int
-    created_at: datetime
+    displayName: str
+    email: str
+    createdAt: datetime

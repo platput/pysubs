@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import pytest
 from pysubs.exceptions.awss3 import S3InvalidUploadSource
-from pysubs.exceptions.youtube import UnsupportedMediaDownloadError, UnsupportedMediaConversionError
+from pysubs.exceptions.media import UnsupportedMediaDownloadError, UnsupportedMediaConversionError
 from pysubs.utils.models import Media, MediaSource, MediaType, ConvertedFile, YouTubeVideo
 from pysubs.utils.video import AwsS3MediaManager, YouTubeMediaManager
 

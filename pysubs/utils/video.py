@@ -9,14 +9,17 @@ from pytube import YouTube
 from pysubs.utils import awss3
 from pysubs.utils.constants import LogConstants
 from pysubs.exceptions.awss3 import S3InvalidUploadSource
-from pysubs.exceptions.youtube import UnsupportedMediaConversionError, UnsupportedMediaDownloadError
+from pysubs.exceptions.media import UnsupportedMediaConversionError, UnsupportedMediaDownloadError
 from pysubs.interfaces.media import MediaManager
-from pysubs.utils.models import MediaType, Media, YouTubeVideo, ConvertedFile
+from pysubs.utils.models import MediaType, Media, YouTubeVideo, ConvertedFile, MediaSource
 
 
 class AwsS3MediaManager(MediaManager):
     def __init__(self):
         self.s3 = awss3.AwsS3()
+
+    def get_media_info(self, video_url) -> Media:
+        pass
 
     def upload(self, media: Media) -> Media:
         if media.content:
@@ -34,6 +37,20 @@ class AwsS3MediaManager(MediaManager):
 
 
 class YouTubeMediaManager(MediaManager):
+    def get_media_info(self, video_url) -> Media:
+        yt = YouTube(video_url)
+        return Media(
+            id=None,
+            title=yt.title,
+            thumbnail_url=yt.thumbnail_url,
+            duration=timedelta(seconds=yt.length),
+            content=None,
+            source=MediaSource.YOUTUBE,
+            file_type=MediaType.MP4,
+            local_storage_path=None,
+            source_url=video_url,
+        )
+
     def upload(self, media: Media) -> Media:
         pass
 

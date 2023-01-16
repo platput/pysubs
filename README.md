@@ -25,6 +25,11 @@ GOOGLE_APPLICATION_CREDENTIALS="pysubs.json"
 - [x] API endpoint for checking subtitle generation status
 - [x] Basic URL verification as a security measure, to be improved later 
 - [x] Add api endpoint to get history
+- [x] Add credits feature
+- [x] Add firebase cloud functions to automate user sync to firestore
+- [x] Reduce credit by one for each subtitle generation
+- [x] Add limits to video duration based on available credits
+- [ ] Show error message when video url is invalid and user clicks the generate button
 - [ ] Check if the video id already exists before starting to generate the subtitle
 - [ ] Add api endpoints support for subtitle translate option to different languages
 - [ ] Add support for direct links of videos

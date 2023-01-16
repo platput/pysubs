@@ -5,12 +5,14 @@ from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 
+from pysubs.dal.datastore_models import UserModel
 from pysubs.dal.firestore import FirestoreDatastore
 from pysubs.utils.auth import decode_token, get_current_user
 from pysubs.utils.constants import LogConstants
 from pysubs.utils.settings import PySubsSettings
-from pysubs.utils.models import GeneralResponse, VideoMetadataResponse, User, SubtitleResponse, HistoryResponse
-from pysubs.utils.pysubs_manager import start_transcribe_worker, get_subtitle_generation_status, get_history
+from pysubs.utils.models import GeneralResponse, VideoMetadataResponse, SubtitleResponse, HistoryResponse, UserResponse
+from pysubs.utils.pysubs_manager import start_transcribe_worker, get_subtitle_generation_status, get_history, \
+    get_media_info, check_if_user_can_generate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
@@ -42,7 +44,7 @@ async def upload_video() -> GeneralResponse:
 
 
 @app.get("/yt/info")
-async def get_yt_video_metadata(request: Request, user: User = Depends(decode_token)) -> GeneralResponse:
+async def get_yt_video_metadata(request: Request, user: UserModel = Depends(decode_token)) -> GeneralResponse:
     json_data = await request.json()
     video_url = json_data.get("video_url")
     return VideoMetadataResponse(
@@ -57,7 +59,7 @@ async def get_yt_video_metadata(request: Request, user: User = Depends(decode_to
 @app.post("/subtitle/status")
 async def get_status(
         request: Request,
-        user: User = Depends(get_current_user)
+        user: UserModel = Depends(get_current_user)
 ) -> SubtitleResponse:
     logger.info(f"User found in token: {user}")
     json_data = await request.json()
@@ -85,11 +87,14 @@ async def get_status(
 @app.post("/subtitles/yt/generate")
 async def generate_subtitles_for_youtube(
         request: Request,
-        user: User = Depends(get_current_user)
+        user: UserModel = Depends(get_current_user)
 ) -> GeneralResponse:
     json_data = await request.json()
     video_url = json_data.get("video_url")
     if verify_url(video_url):
+        video_info = get_media_info(video_url=video_url)
+        if not check_if_user_can_generate(video_info, user):
+            raise HTTPException(status_code=403, detail="Not enough credits to perform generation")
         start_transcribe_worker(video_url=video_url, user=user)
         return GeneralResponse(status="OK")
     else:
@@ -99,7 +104,7 @@ async def generate_subtitles_for_youtube(
 @app.post("/history")
 async def generate_subtitles_for_youtube(
         request: Request,
-        user: User = Depends(get_current_user)
+        user: UserModel = Depends(get_current_user)
 ) -> HistoryResponse:
     json_data = await request.json()
     last_created_at = json_data.get("last_created_at")
@@ -107,6 +112,14 @@ async def generate_subtitles_for_youtube(
         count = int(count)
     subtitles = get_history(last_created_at=last_created_at, count=count, user=user)
     return HistoryResponse(status="OK", subtitles=subtitles)
+
+
+@app.get("/get_user_info")
+async def generate_subtitles_for_youtube(
+        _: Request,
+        user: UserModel = Depends(get_current_user)
+) -> UserModel:
+    return user
 
 
 def verify_url(url: str):

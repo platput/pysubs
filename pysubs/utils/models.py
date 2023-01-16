@@ -5,6 +5,8 @@ from datetime import timedelta, datetime
 
 from pydantic import BaseModel
 
+from pysubs.dal.datastore_models import UserModel
+
 
 # Responses
 class GeneralResponse(BaseModel):
@@ -32,6 +34,10 @@ class SubtitleResponse(GeneralResponse, Subtitle):
     pass
 
 
+class UserResponse(GeneralResponse, UserModel):
+    pass
+
+
 class HistoryResponse(GeneralResponse):
     subtitles: list[Subtitle]
 
@@ -51,7 +57,7 @@ class MediaSource(Enum):
 # Data
 @dataclass
 class Media:
-    id: str
+    id: Optional[str]
     title: Optional[str]
     content: Optional[bytes]
     thumbnail_url: Optional[str]
@@ -72,11 +78,6 @@ class Transcription:
     content: str
     language: str
     media_id: str
-
-
-class User(BaseModel):
-    id: Optional[str]
-    email: Optional[str]
 
 
 @dataclass

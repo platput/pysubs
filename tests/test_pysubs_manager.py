@@ -2,13 +2,12 @@ import hashlib
 import json
 import uuid
 from collections import OrderedDict
-from datetime import timedelta
+from datetime import timedelta, datetime
 
-import pytest
-from pysubs.exceptions.youtube import UnsupportedMediaConversionError
+from pysubs.dal.datastore_models import UserModel
 from pysubs.utils.pysubs_manager import get_audio_from_yt_video, get_subtitles_from_audio, generate_transcription_id, \
     generate_media_id
-from pysubs.utils.models import Media, MediaType, MediaSource, User
+from pysubs.utils.models import Media, MediaType, MediaSource
 
 
 def mock_download(self, media: Media) -> Media:
@@ -45,7 +44,14 @@ class TestPySubsManager:
             "pysubs.utils.video.YouTubeMediaManager.convert",
             mock_convert
         )
-        media = get_audio_from_yt_video(video_url=video_url, user=User())
+        user = UserModel(
+            id="",
+            credits=1,
+            displayName="",
+            email="",
+            createdAt=datetime.now()
+        )
+        media = get_audio_from_yt_video(video_url=video_url, user=user)
         assert media.file_type == MediaType.MP3
         assert media.source_url == video_url
         assert media.local_storage_path == "/file.mp3"
@@ -93,4 +99,11 @@ class TestPySubsManager:
         })
         key_helper = json.dumps(key_helper_dict).encode("utf-8")
         key = hashlib.sha256(key_helper).hexdigest()
-        assert key == generate_media_id(media_url=media_url, user=User(id=user_id))
+        user = UserModel(
+            id=user_id,
+            credits=1,
+            displayName="",
+            email="",
+            createdAt=datetime.now()
+        )
+        assert key == generate_media_id(media_url=media_url, user=user)
