@@ -16,7 +16,6 @@ boto3 = "^1.26.49"
 pytest = "^7.2.0"
 pytube = "^12.1.2"
 tokenizers = "^0.13.2"
-torch = "^1.13.1"
 numpy = "1.24.1"
 tqdm = "^4.64.1"
 more-itertools = "^9.0.0"
@@ -25,6 +24,9 @@ ffmpeg-python = "0.2.0"
 pytest-cov = "^4.0.0"
 pydantic = "^1.10.4"
 firebase-admin = "^6.0.1"
+
+[tool.poetry.dev-dependencies]
+torch = "1.13.1"
 
 [build-system]
 requires = ["poetry-core"]
