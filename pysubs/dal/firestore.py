@@ -25,8 +25,9 @@ class FirestoreDatastore(Datastore):
 
     def __init__(self):
         self.db = firestore.Client()
-        cred = credentials.Certificate(PySubsSettings.instance().get_config("GOOGLE_APPLICATION_CREDENTIALS"))
-        firebase_admin.initialize_app(cred)
+        if PySubsSettings.instance().get_config("ENVIRONMENT") == "dev":
+            cred = credentials.Certificate(PySubsSettings.instance().get_config("GOOGLE_APPLICATION_CREDENTIALS"))
+            firebase_admin.initialize_app(cred)
 
     def upsert_media(self, media: MediaModel) -> MediaModel:
         media_ref = self.db.collection('media').document(media.id)

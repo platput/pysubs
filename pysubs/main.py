@@ -23,6 +23,7 @@ app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 origins = [
     "http://localhost:5173",
+    "https://pysubs.techtuft.com"
 ]
 app.add_middleware(
     CORSMiddleware,

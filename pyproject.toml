@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysubs"
-version = "0.1.0"
+version = "0.1.4"
 description = "Python application to create subtitles for uploaded video file."
 authors = ["Plato Puthur <plato@techtuft.com>"]
 readme = "README.md"
