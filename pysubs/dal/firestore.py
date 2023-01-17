@@ -3,12 +3,10 @@ from datetime import datetime
 from typing import Optional
 
 import firebase_admin
-from firebase_admin import credentials
 from google.cloud import firestore
 from pysubs.dal.datastore_models import MediaModel, SubtitleModel, MediaSubtitlesModel, UserModel
 from pysubs.exceptions.firestore import UserNotFoundError
 from pysubs.interfaces.datastore import Datastore
-from pysubs.utils.settings import PySubsSettings
 
 
 class FirestoreDatastore(Datastore):
@@ -24,10 +22,8 @@ class FirestoreDatastore(Datastore):
         return cls.__singleton_instance
 
     def __init__(self):
+        firebase_admin.initialize_app()
         self.db = firestore.Client()
-        if PySubsSettings.instance().get_config("ENVIRONMENT") == "dev":
-            cred = credentials.Certificate(PySubsSettings.instance().get_config("GOOGLE_APPLICATION_CREDENTIALS"))
-            firebase_admin.initialize_app(cred)
 
     def upsert_media(self, media: MediaModel) -> MediaModel:
         media_ref = self.db.collection('media').document(media.id)
