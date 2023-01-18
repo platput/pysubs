@@ -30,7 +30,7 @@ def get_media_info(video_url: str) -> Media:
 def check_if_user_can_generate(media: Media, user: UserModel) -> bool:
     duration = media.duration
     available_credits = user.credits
-    required_credits = duration.seconds // SECONDS_PER_ONE_CREDIT
+    required_credits = (duration.seconds // SECONDS_PER_ONE_CREDIT) or 1
     if available_credits - required_credits >= 0:
         return True
     else:

@@ -4,6 +4,7 @@ from datetime import timedelta
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from pytube.exceptions import RegexMatchError
 
 from pysubs.dal.datastore_models import UserModel
 from pysubs.dal.firestore import FirestoreDatastore
@@ -93,7 +94,10 @@ async def generate_subtitles_for_youtube(
     json_data = await request.json()
     video_url = json_data.get("video_url")
     if verify_url(video_url):
-        video_info = get_media_info(video_url=video_url)
+        try:
+            video_info = get_media_info(video_url=video_url)
+        except RegexMatchError as e:
+            raise HTTPException(status_code=403, detail="Invalid YouTube video url")
         if not check_if_user_can_generate(video_info, user):
             raise HTTPException(status_code=403, detail="Not enough credits to perform generation")
         if video_info.duration.seconds > 600:
