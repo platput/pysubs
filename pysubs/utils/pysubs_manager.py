@@ -19,7 +19,7 @@ from pysubs.utils.constants import LogConstants
 
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
 
-SECONDS_PER_ONE_CREDIT: int = 900
+SECONDS_PER_ONE_CREDIT: int = 300
 
 
 def get_media_info(video_url: str) -> Media:

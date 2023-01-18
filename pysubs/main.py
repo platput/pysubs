@@ -96,6 +96,10 @@ async def generate_subtitles_for_youtube(
         video_info = get_media_info(video_url=video_url)
         if not check_if_user_can_generate(video_info, user):
             raise HTTPException(status_code=403, detail="Not enough credits to perform generation")
+        if video_info.duration.seconds > 600:
+            raise HTTPException(
+                status_code=403, detail="Videos with more than 10 minutes of length is not supported at the moment."
+            )
         start_transcribe_worker(video_url=video_url, user=user)
         return GeneralResponse(status="OK")
     else:
