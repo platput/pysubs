@@ -6,6 +6,7 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import Optional
 
+from fastapi import UploadFile
 from google.api_core.exceptions import PermissionDenied
 from pysubs.dal.datastore_models import MediaModel, SubtitleModel, UserModel
 from pysubs.dal.firestore import FirestoreDatastore
@@ -14,7 +15,7 @@ from pysubs.interfaces.asr import ASR
 from pysubs.interfaces.media import MediaManager
 from pysubs.utils.models import Media, MediaSource, MediaType, Transcription, Subtitle
 from pysubs.utils.transcriber import WhisperTranscriber
-from pysubs.utils.video import YouTubeMediaManager
+from pysubs.utils.video import YouTubeMediaManager, FileMediaManager
 from pysubs.utils.constants import LogConstants
 
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
@@ -46,6 +47,15 @@ def process_yt_video_url_and_generate_subtitles(video_url: str, user: UserModel)
     logger.info(f"Saved data to datastore.")
 
 
+def process_uploaded_file_and_generate_subtitles(file: UploadFile, user: UserModel):
+    audio = get_audio_from_video_file(file=file, user=user)
+    logger.info(f"Audio generated for the uploaded video file: {file.filename}")
+    transcription = get_subtitles_from_audio(audio=audio)
+    logger.info(f"Audio transcription finished for the video file: {file.filename}")
+    save_transcription_attempt(audio, transcription, user)
+    logger.info(f"Saved data to datastore.")
+
+
 def get_audio_from_yt_video(video_url: str, user: UserModel) -> Media:
     mgr: MediaManager = YouTubeMediaManager()
     media: Media = Media(
@@ -58,6 +68,25 @@ def get_audio_from_yt_video(video_url: str, user: UserModel) -> Media:
         local_storage_path=None,
         source_url=video_url,
         thumbnail_url=None
+    )
+    video = mgr.download(media=media)
+    audio = mgr.convert(media=video, to_type=MediaType.MP3)
+    return audio
+
+
+def get_audio_from_video_file(file: UploadFile, user: UserModel) -> Media:
+    mgr: MediaManager = FileMediaManager()
+    media = mgr.get_media_info(video_file=file)
+    media: Media = Media(
+        id=generate_media_id(media_url=media.local_storage_path, user=user),
+        title=media.title,
+        content=None,
+        duration=media.duration,
+        source=media.source,
+        file_type=MediaType.MP4,
+        local_storage_path=media.local_storage_path,
+        source_url=media.source_url,
+        thumbnail_url=media.thumbnail_url
     )
     video = mgr.download(media=media)
     audio = mgr.convert(media=video, to_type=MediaType.MP3)
@@ -95,8 +124,13 @@ def get_subtitles_from_audio(audio: Media) -> Transcription:
     )
 
 
-def start_transcribe_worker(video_url: str, user: UserModel) -> None:
+def start_youtube_transcribe_worker(video_url: str, user: UserModel) -> None:
     thr = threading.Thread(target=process_yt_video_url_and_generate_subtitles, args=(video_url, user,))
+    thr.start()
+
+
+def start_video_file_transcribe_worker(file: UploadFile, user: UserModel) -> None:
+    thr = threading.Thread(target=process_uploaded_file_and_generate_subtitles, args=(file, user,))
     thr.start()
 
 

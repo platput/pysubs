@@ -1,7 +1,7 @@
 import logging
 import re
 from datetime import timedelta
-from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi import FastAPI, Request, Depends, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pytube.exceptions import RegexMatchError
@@ -12,8 +12,8 @@ from pysubs.utils.auth import decode_token, get_current_user
 from pysubs.utils.constants import LogConstants
 from pysubs.utils.settings import PySubsSettings
 from pysubs.utils.models import GeneralResponse, VideoMetadataResponse, SubtitleResponse, HistoryResponse, UserResponse
-from pysubs.utils.pysubs_manager import start_transcribe_worker, get_subtitle_generation_status, get_history, \
-    get_media_info, check_if_user_can_generate
+from pysubs.utils.pysubs_manager import start_youtube_transcribe_worker, get_subtitle_generation_status, get_history, \
+    get_media_info, check_if_user_can_generate, start_video_file_transcribe_worker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
@@ -104,7 +104,7 @@ async def generate_subtitles_for_youtube(
             raise HTTPException(
                 status_code=403, detail="Videos with more than 10 minutes of length is not supported at the moment."
             )
-        start_transcribe_worker(video_url=video_url, user=user)
+        start_youtube_transcribe_worker(video_url=video_url, user=user)
         return GeneralResponse(status="OK")
     else:
         raise HTTPException(status_code=403, detail="Invalid URL")
@@ -129,6 +129,30 @@ async def generate_subtitles_for_youtube(
         user: UserModel = Depends(get_current_user)
 ) -> UserModel:
     return user
+
+
+@app.post("/subtitles/videofile/generate")
+async def generate_subtitles_for_youtube(
+        file: UploadFile,
+        user: UserModel = Depends(get_current_user)
+) -> GeneralResponse:
+    json_data = await request.json()
+    video_url = json_data.get("video_url")
+    if verify_url(video_url):
+        try:
+            video_info = get_media_info(video_url=video_url)
+        except RegexMatchError as e:
+            raise HTTPException(status_code=403, detail="Invalid YouTube video url")
+        if not check_if_user_can_generate(video_info, user):
+            raise HTTPException(status_code=403, detail="Not enough credits to perform generation")
+        if video_info.duration.seconds > 600:
+            raise HTTPException(
+                status_code=403, detail="Videos with more than 10 minutes of length is not supported at the moment."
+            )
+        start_video_file_transcribe_worker(file=file, user=user)
+        return GeneralResponse(status="OK")
+    else:
+        raise HTTPException(status_code=403, detail="Invalid URL")
 
 
 def verify_url(url: str):

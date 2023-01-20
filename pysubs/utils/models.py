@@ -52,6 +52,7 @@ class MediaType(Enum):
 class MediaSource(Enum):
     AWS = "AWS"
     YOUTUBE = "YOUTUBE"
+    RAW_FILE = "RAW_FILE"
 
 
 # Data
@@ -89,6 +90,15 @@ class YouTubeVideo:
     thumbnail_url: Optional[str]
     local_storage_path: str
 
+
+@dataclass
+class VideoFile:
+    title: str
+    video_link: str
+    duration: timedelta
+    content: Optional[bytes]
+    thumbnail_url: Optional[str]
+    local_storage_path: str
 
 @dataclass
 class ConvertedFile:
