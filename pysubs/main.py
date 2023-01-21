@@ -1,19 +1,19 @@
 import logging
 import re
-from datetime import timedelta
 from fastapi import FastAPI, Request, Depends, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pytube.exceptions import RegexMatchError
+from starlette_validation_uploadfile import ValidateUploadFileMiddleware
 
 from pysubs.dal.datastore_models import UserModel
 from pysubs.dal.firestore import FirestoreDatastore
-from pysubs.utils.auth import decode_token, get_current_user
+from pysubs.utils.auth import get_current_user
 from pysubs.utils.constants import LogConstants
 from pysubs.utils.settings import PySubsSettings
-from pysubs.utils.models import GeneralResponse, VideoMetadataResponse, SubtitleResponse, HistoryResponse, UserResponse
+from pysubs.utils.models import GeneralResponse, SubtitleResponse, HistoryResponse
 from pysubs.utils.pysubs_manager import start_youtube_transcribe_worker, get_subtitle_generation_status, get_history, \
-    get_media_info, check_if_user_can_generate, start_video_file_transcribe_worker
+    check_if_user_can_generate, start_video_file_transcribe_worker, get_yt_media_info
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
@@ -33,6 +33,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(
+    ValidateUploadFileMiddleware,
+    app_path=[
+       "/subtitles/videofile/generate",
+    ],
+    max_size=250000000,
+    file_type=["video/mp4"]
+)
 
 
 @app.get("/health")
@@ -40,22 +48,22 @@ async def root():
     return {"status": "OK"}
 
 
-@app.get("/upload")
-async def upload_video() -> GeneralResponse:
-    return GeneralResponse(status="OK")
+# @app.get("/upload")
+# async def upload_video() -> GeneralResponse:
+#     return GeneralResponse(status="OK")
 
 
-@app.get("/yt/info")
-async def get_yt_video_metadata(request: Request, user: UserModel = Depends(decode_token)) -> GeneralResponse:
-    json_data = await request.json()
-    video_url = json_data.get("video_url")
-    return VideoMetadataResponse(
-        status="OK",
-        video_url=video_url,
-        title="",
-        video_length=timedelta(hours=1).seconds,
-        thumbnail="https://yt.be/test.jpg",
-    )
+# @app.get("/yt/info")
+# async def get_yt_video_metadata(request: Request, user: UserModel = Depends(decode_token)) -> GeneralResponse:
+#     json_data = await request.json()
+#     video_url = json_data.get("video_url")
+#     return VideoMetadataResponse(
+#         status="OK",
+#         video_url=video_url,
+#         title="",
+#         video_length=timedelta(hours=1).seconds,
+#         thumbnail="https://yt.be/test.jpg",
+#     )
 
 
 @app.post("/subtitle/status")
@@ -95,8 +103,8 @@ async def generate_subtitles_for_youtube(
     video_url = json_data.get("video_url")
     if verify_url(video_url):
         try:
-            video_info = get_media_info(video_url=video_url)
-        except RegexMatchError as e:
+            video_info = get_yt_media_info(video_url=video_url)
+        except RegexMatchError:
             raise HTTPException(status_code=403, detail="Invalid YouTube video url")
         if not check_if_user_can_generate(video_info, user):
             raise HTTPException(status_code=403, detail="Not enough credits to perform generation")
@@ -136,23 +144,8 @@ async def generate_subtitles_for_youtube(
         file: UploadFile,
         user: UserModel = Depends(get_current_user)
 ) -> GeneralResponse:
-    json_data = await request.json()
-    video_url = json_data.get("video_url")
-    if verify_url(video_url):
-        try:
-            video_info = get_media_info(video_url=video_url)
-        except RegexMatchError as e:
-            raise HTTPException(status_code=403, detail="Invalid YouTube video url")
-        if not check_if_user_can_generate(video_info, user):
-            raise HTTPException(status_code=403, detail="Not enough credits to perform generation")
-        if video_info.duration.seconds > 600:
-            raise HTTPException(
-                status_code=403, detail="Videos with more than 10 minutes of length is not supported at the moment."
-            )
-        start_video_file_transcribe_worker(file=file, user=user)
-        return GeneralResponse(status="OK")
-    else:
-        raise HTTPException(status_code=403, detail="Invalid URL")
+    start_video_file_transcribe_worker(file=file, user=user)
+    return GeneralResponse(status="OK")
 
 
 def verify_url(url: str):

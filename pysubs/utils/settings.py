@@ -5,6 +5,9 @@ from pysubs.utils.constants import EnvConstants
 
 
 class PySubsSettings:
+    """
+    A singleton class to access the os environment which is where we are storing all the required configs
+    """
     __singleton_instance = None
     __singleton_lock = threading.Lock()
     defaults = {

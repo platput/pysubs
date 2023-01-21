@@ -7,11 +7,21 @@ from pysubs.dal.datastore_models import UserModel
 from pysubs.dal.firestore import FirestoreDatastore
 from pysubs.utils.constants import LogConstants
 
+"""
+Uses the bearer token to authenticate all the requests to the API endpoints
+"""
+
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
+    """
+    Gets the token and gets the corresponding user from firebase
+    :param token:
+    :return:
+    """
     user = decode_token(token)
     user_id = user.get("user_id")
     ds_user = FirestoreDatastore.instance().get_user(user_id=user_id)
@@ -19,6 +29,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
 
 
 def decode_token(token: str) -> dict:
+    """
+    Takes the token, decodes it and verifies the user account belonging to the token
+    :param token:
+    :return:
+    """
     try:
         user = firebase_admin.auth.verify_id_token(token)
         return user

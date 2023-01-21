@@ -15,7 +15,8 @@ from pysubs.interfaces.asr import ASR
 from pysubs.interfaces.media import MediaManager
 from pysubs.utils.models import Media, MediaSource, MediaType, Transcription, Subtitle
 from pysubs.utils.transcriber import WhisperTranscriber
-from pysubs.utils.video import YouTubeMediaManager, FileMediaManager
+from pysubs.utils.media.youtube import YouTubeMediaManager
+from pysubs.utils.media.file import FileMediaManager
 from pysubs.utils.constants import LogConstants
 
 logger = logging.getLogger(LogConstants.LOGGER_NAME)
@@ -23,12 +24,24 @@ logger = logging.getLogger(LogConstants.LOGGER_NAME)
 SECONDS_PER_ONE_CREDIT: int = 300
 
 
-def get_media_info(video_url: str) -> Media:
+def get_yt_media_info(video_url: str) -> Media:
+    """
+    helper function to get the media info for YouTube video url
+    :param video_url:
+    :return:
+    """
     mgr: MediaManager = YouTubeMediaManager()
     return mgr.get_media_info(video_url=video_url)
 
 
 def check_if_user_can_generate(media: Media, user: UserModel) -> bool:
+    """
+    Check if the user has enough credit to do the subtitle generation
+    TODO: This can be added to the api endpoint using depends
+    :param media:
+    :param user:
+    :return:
+    """
     duration = media.duration
     available_credits = user.credits
     required_credits = (duration.seconds // SECONDS_PER_ONE_CREDIT) or 1
@@ -39,6 +52,12 @@ def check_if_user_can_generate(media: Media, user: UserModel) -> bool:
 
 
 def process_yt_video_url_and_generate_subtitles(video_url: str, user: UserModel):
+    """
+    helper function to process the video from YouTube url and generate the subtitles
+    :param video_url:
+    :param user:
+    :return:
+    """
     audio = get_audio_from_yt_video(video_url=video_url, user=user)
     logger.info(f"Audio generated for the video url: {video_url}")
     transcription = get_subtitles_from_audio(audio=audio)
@@ -48,6 +67,12 @@ def process_yt_video_url_and_generate_subtitles(video_url: str, user: UserModel)
 
 
 def process_uploaded_file_and_generate_subtitles(file: UploadFile, user: UserModel):
+    """
+    helper function to process the uploaded video file and generate the subtitles
+    :param file:
+    :param user:
+    :return:
+    """
     audio = get_audio_from_video_file(file=file, user=user)
     logger.info(f"Audio generated for the uploaded video file: {file.filename}")
     transcription = get_subtitles_from_audio(audio=audio)
@@ -57,6 +82,12 @@ def process_uploaded_file_and_generate_subtitles(file: UploadFile, user: UserMod
 
 
 def get_audio_from_yt_video(video_url: str, user: UserModel) -> Media:
+    """
+    helper function to get the audio file from the YouTube video url
+    :param video_url:
+    :param user:
+    :return:
+    """
     mgr: MediaManager = YouTubeMediaManager()
     media: Media = Media(
         id=generate_media_id(media_url=video_url, user=user),
@@ -75,6 +106,12 @@ def get_audio_from_yt_video(video_url: str, user: UserModel) -> Media:
 
 
 def get_audio_from_video_file(file: UploadFile, user: UserModel) -> Media:
+    """
+    helper function to get the audio file from the uploaded video file
+    :param file:
+    :param user:
+    :return:
+    """
     mgr: MediaManager = FileMediaManager()
     media = mgr.get_media_info(video_file=file)
     media: Media = Media(
@@ -94,6 +131,13 @@ def get_audio_from_video_file(file: UploadFile, user: UserModel) -> Media:
 
 
 def generate_transcription_id(media_id: str, language: str) -> str:
+    """
+    Helper function to generate the transcription id
+    This helps to get data from the data store without searching.
+    :param media_id:
+    :param language:
+    :return:
+    """
     key_helper_dict = OrderedDict({
         "media_id": media_id,
         "language": language
@@ -103,6 +147,13 @@ def generate_transcription_id(media_id: str, language: str) -> str:
 
 
 def generate_media_id(media_url: str, user: UserModel) -> str:
+    """
+    helper function to generate the media id
+    This helps to get data from the data store without searching.
+    :param media_url:
+    :param user:
+    :return:
+    """
     key_helper_dict = OrderedDict({
         "media_url": media_url,
         "user_id": user.id
@@ -112,6 +163,11 @@ def generate_media_id(media_url: str, user: UserModel) -> str:
 
 
 def get_subtitles_from_audio(audio: Media) -> Transcription:
+    """
+    helper function to generate the transcription
+    :param audio:
+    :return:
+    """
     transcriber: ASR = WhisperTranscriber()
     result = transcriber.process_audio(audio=audio)
     language = transcriber.get_detected_language(processed_data=result)
@@ -125,16 +181,35 @@ def get_subtitles_from_audio(audio: Media) -> Transcription:
 
 
 def start_youtube_transcribe_worker(video_url: str, user: UserModel) -> None:
+    """
+    starts the worker in a separate thread
+    :param video_url:
+    :param user:
+    :return:
+    """
     thr = threading.Thread(target=process_yt_video_url_and_generate_subtitles, args=(video_url, user,))
     thr.start()
 
 
 def start_video_file_transcribe_worker(file: UploadFile, user: UserModel) -> None:
+    """
+    starts the worker in a separate thread
+    :param file:
+    :param user:
+    :return:
+    """
     thr = threading.Thread(target=process_uploaded_file_and_generate_subtitles, args=(file, user,))
     thr.start()
 
 
 def save_transcription_attempt(audio: Media, transcription: Transcription, user: UserModel) -> None:
+    """
+    Saves the transcription attempt in the datastore
+    :param audio:
+    :param transcription:
+    :param user:
+    :return:
+    """
     fs = FirestoreDatastore.instance()
     ds_user = fs.get_user(user.id)
     ds_user.credits = get_remaining_credits(media=audio, user=user)
@@ -167,6 +242,12 @@ def save_transcription_attempt(audio: Media, transcription: Transcription, user:
 
 
 def get_subtitle_generation_status(video_url: str, user: UserModel) -> tuple[Optional[MediaModel], Optional[SubtitleModel]]:
+    """
+    helper function to get the subtitle generation status from the datastore.
+    :param video_url:
+    :param user:
+    :return:
+    """
     media_id = generate_media_id(video_url, user)
     fs = FirestoreDatastore.instance()
     if media := fs.get_media(media_id=media_id):
@@ -177,6 +258,13 @@ def get_subtitle_generation_status(video_url: str, user: UserModel) -> tuple[Opt
 
 
 def get_history(last_created_at: Optional[datetime], count: int, user: UserModel) -> list[Subtitle]:
+    """
+    helper function to get the previous subtitle generation entries
+    :param last_created_at:
+    :param count:
+    :param user:
+    :return:
+    """
     fs = FirestoreDatastore.instance()
     history = fs.get_history_for_user(user_id=user.id, last_created_at=last_created_at, count=count)
     resp: list[Subtitle] = []
@@ -199,6 +287,12 @@ def get_history(last_created_at: Optional[datetime], count: int, user: UserModel
 
 
 def get_remaining_credits(media: Media, user: UserModel) -> int:
+    """
+    helper function to get the remaining credits a user has
+    :param media:
+    :param user:
+    :return:
+    """
     duration = media.duration
     available_credits = user.credits
     required_credits = (duration.seconds // SECONDS_PER_ONE_CREDIT) or 1

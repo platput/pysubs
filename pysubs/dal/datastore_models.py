@@ -5,6 +5,9 @@ from datetime import datetime
 
 
 class MediaModel(BaseModel):
+    """
+    datastore model to store the media, which can either be audio or video
+    """
     id: str
     user_id: Optional[str]
     title: str
@@ -16,6 +19,9 @@ class MediaModel(BaseModel):
 
 
 class SubtitleModel(BaseModel):
+    """
+    datastore model to store the subtitles
+    """
     id: str
     media_id: str
     content: str
@@ -25,11 +31,13 @@ class SubtitleModel(BaseModel):
 
 
 class MediaSubtitlesModel(BaseModel):
+    """A helper model to get the data from firestore which will contain all the medias and the subtitles each media has"""
     media: MediaModel
     subtitles: list[SubtitleModel]
 
 
 class UserModel(BaseModel):
+    """Data store representation of the user model"""
     id: str
     credits: int
     displayName: str
