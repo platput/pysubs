@@ -11,10 +11,11 @@ from fastapi import UploadFile
 from pysubs.dal.datastore_models import UserModel
 from pysubs.exceptions.media import NotEnoughCreditsToPerformGenerationError
 from pysubs.utils.pysubs_manager import get_audio_from_yt_video, get_subtitles_from_audio, generate_transcription_id, \
-    generate_media_id, check_if_user_can_generate, get_audio_from_video_file, get_remaining_credits, get_history
+    check_if_user_can_generate, get_audio_from_video_file, get_remaining_credits, get_history
 from pysubs.utils.models import Media, MediaType, MediaSource
 from tests.mock_functions import mock_download, mock_convert, mock_process_audio, mock_generate_subtitles, \
-    mock_get_media_info, mock_firestore_instance, mock_get_history_for_user
+    mock_firestore_instance, mock_get_history_for_user, mock_get_media_info_for_yt, \
+    mock_get_media_info_for_file
 
 sample_file = BinaryIO()
 sample_file.write(b"12354")
@@ -33,6 +34,10 @@ class TestPySubsManager:
             "pysubs.utils.media.youtube.YouTubeMediaManager.convert",
             mock_convert
         )
+        monkeypatch.setattr(
+            "pysubs.utils.media.youtube.YouTubeMediaManager.get_media_info",
+            mock_get_media_info_for_yt
+        )
         user = UserModel(
             id="",
             credits=1,
@@ -40,15 +45,20 @@ class TestPySubsManager:
             email="",
             createdAt=datetime.now()
         )
-        media = get_audio_from_yt_video(video_url=video_url, user=user)
+        video = Media(
+            id="123456",
+            source=MediaSource.YOUTUBE,
+            file_type=MediaType.MP4,
+            source_url="https://youtube.com/testvideo"
+        )
+        media = get_audio_from_yt_video(video=video, user=user)
         assert media.file_type == MediaType.MP3
         assert media.source_url == video_url
-        assert media.local_storage_path == "/file.mp3"
 
     def test_get_audio_from_video_file(self, monkeypatch):
         monkeypatch.setattr(
             "pysubs.utils.media.file.FileMediaManager.get_media_info",
-            mock_get_media_info
+            mock_get_media_info_for_file
         )
         monkeypatch.setattr(
             "pysubs.utils.media.file.FileMediaManager.download",
@@ -65,7 +75,12 @@ class TestPySubsManager:
             email="",
             createdAt=datetime.now()
         )
-        media = get_audio_from_video_file(file=uploaded_file, user=user)
+        video = Media(
+            id="123456",
+            source=MediaSource.RAW_FILE,
+            file_type=MediaType.MP4,
+        )
+        media = get_audio_from_video_file(video=video, user=user)
         assert media.file_type == MediaType.MP3
 
     def test_get_subtitles_from_audio(self, monkeypatch):
@@ -101,24 +116,6 @@ class TestPySubsManager:
         key_helper = json.dumps(key_helper_dict).encode("utf-8")
         key = hashlib.sha256(key_helper).hexdigest()
         assert key == generate_transcription_id(media_id=media_id, language=language)
-
-    def test_generate_media_id(self):
-        media_url = "https://mediaurl.com"
-        user_id = "1"
-        key_helper_dict = OrderedDict({
-            "media_url": media_url,
-            "user_id": user_id
-        })
-        key_helper = json.dumps(key_helper_dict).encode("utf-8")
-        key = hashlib.sha256(key_helper).hexdigest()
-        user = UserModel(
-            id=user_id,
-            credits=1,
-            displayName="",
-            email="",
-            createdAt=datetime.now()
-        )
-        assert key == generate_media_id(media_url=media_url, user=user)
 
     media = Media(
         id=None,

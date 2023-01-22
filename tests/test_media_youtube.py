@@ -1,11 +1,32 @@
-from datetime import timedelta
+import hashlib
+import json
+from collections import OrderedDict
+from datetime import timedelta, datetime
 
 import pytest
+
+from pysubs.dal.datastore_models import UserModel
 from pysubs.exceptions.media import UnsupportedMediaDownloadError, UnsupportedMediaConversionError
 from pysubs.utils.conversion import convert_to_mp3 as convert_to_mp3
 from pysubs.utils.models import Media, MediaSource, MediaType, ConvertedFile
 from pysubs.utils.media.youtube import YouTubeMediaManager
 from tests.mock_functions import mock_download_from_youtube, mock_convert_to_mp3, mock_ffmpeg_convert, mock_convert
+
+
+sample_media = Media(
+    id=None,
+    source=MediaSource.YOUTUBE,
+    file_type=MediaType.MP4,
+    source_url="https://youtube.com/testvideo",
+)
+
+sample_user = UserModel(
+    id="1",
+    credits="100",
+    displayName="pla",
+    email="str@str.com",
+    createdAt=datetime.now()
+)
 
 
 class TestYTMediaManager:
@@ -126,3 +147,12 @@ class TestYTMediaManager:
         audio.local_storage_path = "/file.mp4"
         result = convert_to_mp3(media=audio)
         assert type(result) == ConvertedFile
+
+    def test_generate_media_id(self):
+        media_id = YouTubeMediaManager.generate_media_id(sample_media, sample_user)
+        key_helper_dict = OrderedDict({
+            "media_url": sample_media.source_url,
+            "user_id": sample_user.id
+        })
+        key_helper = json.dumps(key_helper_dict).encode("utf-8")
+        assert hashlib.sha256(key_helper).hexdigest() == media_id

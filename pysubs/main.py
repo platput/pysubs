@@ -11,7 +11,7 @@ from pysubs.dal.firestore import FirestoreDatastore
 from pysubs.utils.auth import get_current_user
 from pysubs.utils.constants import LogConstants
 from pysubs.utils.settings import PySubsSettings
-from pysubs.utils.models import GeneralResponse, SubtitleResponse, HistoryResponse
+from pysubs.utils.models import GeneralResponse, SubtitleResponse, HistoryResponse, GenerateResponse
 from pysubs.utils.pysubs_manager import start_youtube_transcribe_worker, get_subtitle_generation_status, get_history, \
     check_if_user_can_generate, start_video_file_transcribe_worker, get_yt_media_info
 
@@ -35,9 +35,7 @@ app.add_middleware(
 )
 app.add_middleware(
     ValidateUploadFileMiddleware,
-    app_path=[
-       "/subtitles/videofile/generate",
-    ],
+    app_path="/subtitles/videofile/generate",
     max_size=250000000,
     file_type=["video/mp4"]
 )
@@ -73,9 +71,9 @@ async def get_status(
 ) -> SubtitleResponse:
     logger.info(f"User found in token: {user}")
     json_data = await request.json()
-    video_url = json_data.get("video_url")
+    media_id = json_data.get("media_id")
     if verify_url(video_url):
-        media, subtitle = get_subtitle_generation_status(video_url=video_url, user=user)
+        media, subtitle = get_subtitle_generation_status(media_id=media_id)
         if media and subtitle:
             return SubtitleResponse(
                 status="OK",
@@ -98,12 +96,12 @@ async def get_status(
 async def generate_subtitles_for_youtube(
         request: Request,
         user: UserModel = Depends(get_current_user)
-) -> GeneralResponse:
+) -> GenerateResponse:
     json_data = await request.json()
     video_url = json_data.get("video_url")
     if verify_url(video_url):
         try:
-            video_info = get_yt_media_info(video_url=video_url)
+            video_info = get_yt_media_info(video_url=video_url, user=user)
         except RegexMatchError:
             raise HTTPException(status_code=403, detail="Invalid YouTube video url")
         if not check_if_user_can_generate(video_info, user):
@@ -112,14 +110,14 @@ async def generate_subtitles_for_youtube(
             raise HTTPException(
                 status_code=403, detail="Videos with more than 10 minutes of length is not supported at the moment."
             )
-        start_youtube_transcribe_worker(video_url=video_url, user=user)
-        return GeneralResponse(status="OK")
+        media_id = start_youtube_transcribe_worker(video_url=video_url, user=user)
+        return GenerateResponse(status="OK", media_id=media_id)
     else:
         raise HTTPException(status_code=403, detail="Invalid URL")
 
 
 @app.post("/history")
-async def generate_subtitles_for_youtube(
+async def get_media_and_subtitles_history(
         request: Request,
         user: UserModel = Depends(get_current_user)
 ) -> HistoryResponse:
@@ -132,7 +130,7 @@ async def generate_subtitles_for_youtube(
 
 
 @app.get("/get_user_info")
-async def generate_subtitles_for_youtube(
+async def get_user_details(
         _: Request,
         user: UserModel = Depends(get_current_user)
 ) -> UserModel:
@@ -140,12 +138,12 @@ async def generate_subtitles_for_youtube(
 
 
 @app.post("/subtitles/videofile/generate")
-async def generate_subtitles_for_youtube(
+async def upload_file_and_generate_subtitles(
         file: UploadFile,
         user: UserModel = Depends(get_current_user)
 ) -> GeneralResponse:
-    start_video_file_transcribe_worker(file=file, user=user)
-    return GeneralResponse(status="OK")
+    media_id = start_video_file_transcribe_worker(file=file, user=user)
+    return GenerateResponse(status="OK", media_id=media_id)
 
 
 def verify_url(url: str):

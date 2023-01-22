@@ -1,10 +1,15 @@
+import hashlib
+import json
 import logging
 import tempfile
 from datetime import timedelta
 from typing import Optional
+from collections import OrderedDict
 
 from fastapi import UploadFile
 from pytube import YouTube
+
+from pysubs.dal.datastore_models import UserModel
 from pysubs.utils.constants import LogConstants
 from pysubs.exceptions.media import UnsupportedMediaConversionError, UnsupportedMediaDownloadError
 from pysubs.interfaces.media import MediaManager
@@ -13,16 +18,57 @@ from pysubs.utils.models import MediaType, Media, YouTubeVideo, ConvertedFile, M
 
 
 class YouTubeMediaManager(MediaManager):
-    def get_media_info(self, video_url: Optional[str] = None, video_file: Optional[UploadFile] = None) -> Media:
+    @staticmethod
+    def create_media(video_source: Optional[str | UploadFile], user: UserModel) -> Media:
         """
-        Gets the information about the video located at the YouTube video url
-        :param video_url:
-        :param video_file:
+        Creates the media object which can be passed around until the subtitle is generated
+        :param video_source:
+        :param user:
         :return:
         """
-        yt = YouTube(video_url)
-        return Media(
+        media = Media(
             id=None,
+            source=MediaSource.YOUTUBE,
+            file_type=MediaType.MP4,
+            source_url=video_source
+        )
+        media.id = YouTubeMediaManager.generate_media_id(media=media, user=user)
+        return media
+
+    @staticmethod
+    def generate_media_id(
+            media: Media,
+            user: UserModel
+    ) -> str:
+        """
+        Generates the media id using the user and the video url
+        :param media:
+        :param user:
+        :return:
+        """
+        key_helper_dict = OrderedDict({
+            "media_url": media.source_url,
+            "user_id": user.id
+        })
+        key_helper = json.dumps(key_helper_dict).encode("utf-8")
+        return hashlib.sha256(key_helper).hexdigest()
+
+    def get_media_info(
+            self,
+            media: Media,
+            user: UserModel
+    ) -> Media:
+        """
+        Gets the information about the video located at the YouTube video url
+        :param media:
+        :param user:
+        :return:
+        """
+        video_url = media.source_url
+        yt = YouTube(video_url)
+        media_id = media.id if media.id else YouTubeMediaManager.generate_media_id(media, user)
+        return Media(
+            id=media_id,
             title=yt.title,
             thumbnail_url=yt.thumbnail_url,
             duration=timedelta(seconds=yt.length),

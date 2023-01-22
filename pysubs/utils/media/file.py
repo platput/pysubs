@@ -1,9 +1,15 @@
+import hashlib
+import json
 import os.path
 import tempfile
+import uuid
+from collections import OrderedDict
 from datetime import timedelta, datetime
 from typing import Optional
 
 from fastapi import UploadFile
+
+from pysubs.dal.datastore_models import UserModel
 from pysubs.exceptions.media import UnsupportedMediaConversionError
 from pysubs.interfaces.media import MediaManager
 from pysubs.utils import file_helper
@@ -16,36 +22,67 @@ class FileMediaManager(MediaManager):
     """
     Class to handle file uploads and subtitle generation for uploaded video files.
     """
+    @staticmethod
+    def create_media(video_source: Optional[str | UploadFile], user: UserModel) -> Media:
+        """
+        Creates the media object which can be passed around until the subtitle is generated
+        :param video_source:
+        :param user:
+        :return:
+        """
+        media = Media(
+            id=None,
+            source=MediaSource.RAW_FILE,
+            file_type=MediaType.MP4,
+            source_file=video_source
+        )
+        media.id = FileMediaManager.generate_media_id(media=media, user=user)
+        return media
+
+    @staticmethod
+    def generate_media_id(media: Media, user: UserModel) -> str:
+        """
+        Generates the media id using the user and the video url
+        :param media:
+        :param user:
+        :return:
+        """
+        unique_file_id = FileMediaManager.make_filename_unique(media.source_file.filename)
+        key_helper_dict = OrderedDict({
+            "unique_file_id": unique_file_id,
+            "user_id": user.id
+        })
+        key_helper = json.dumps(key_helper_dict).encode("utf-8")
+        return hashlib.sha256(key_helper).hexdigest()
+
     def upload(self, media: Media) -> Media:
         pass
 
-    def get_media_info(self, video_url: Optional[str] = None, video_file: Optional[UploadFile] = None) -> Media:
+    def get_media_info(
+            self,
+            media: Media,
+            user: UserModel
+    ) -> Media:
         """
         Gets the media info.
         TODO: Use this function to get information about the video and raise exception
         if the uploaded file is unsupported
-        :param video_url:
-        :param video_file:
+        :param media:
+        :param user:
         :return:
         """
-        file = video_file.file
+        file = media.source_file.file
         content = file.read()
         file.close()
         temp_dir = tempfile.gettempdir()
-        uploaded_filename = os.path.splitext(video_file.filename)
-        current_timestamp = int(round(datetime.now().timestamp()))
-        # Sanitizing the user inputted filename
-        # TODO: To be improved later using regex
-        sanitized_filename = uploaded_filename[0].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
-        sanitized_ext = uploaded_filename[1].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
-        video_filename = f"{sanitized_filename}-{current_timestamp}{sanitized_ext}"
+        video_filename = FileMediaManager.make_filename_unique(filename=media.source_file.filename)
         local_storage_path = os.path.join(temp_dir, video_filename)
         file_helper.write_content_to_file(local_storage_path=local_storage_path, file_content=content)
         duration = ffmpeg_utils.get_media_duration(media_file_path=local_storage_path)
         thumbnail_path = ffmpeg_utils.create_thumbnail(media_file_path=local_storage_path)
         base64_url = conversion.get_base64_src_for_image(image_filepath=thumbnail_path)
         return Media(
-            id=None,
+            id=FileMediaManager.generate_media_id(media=media, user=user),
             title=os.path.basename(local_storage_path),
             thumbnail_url=base64_url,
             duration=timedelta(seconds=duration),
@@ -55,6 +92,16 @@ class FileMediaManager(MediaManager):
             local_storage_path=local_storage_path,
             source_url=local_storage_path,
         )
+
+    @staticmethod
+    def make_filename_unique(filename: str) -> str:
+        # TODO: To be improved later using regex
+        uploaded_filename = os.path.splitext(filename)
+        # Sanitizing the user inputted filename
+        sanitized_filename = uploaded_filename[0].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
+        sanitized_ext = uploaded_filename[1].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
+        unique_filename = f"{sanitized_filename}-{uuid.uuid4().hex}{sanitized_ext}"
+        return unique_filename
 
     def download(self, media: Media) -> Media:
         """

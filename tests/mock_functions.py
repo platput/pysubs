@@ -2,10 +2,11 @@ import base64
 import os
 import uuid
 from datetime import timedelta, datetime
+from typing import BinaryIO
 
 from fastapi import UploadFile
 
-from pysubs.dal.datastore_models import MediaSubtitlesModel, SubtitleModel, MediaModel
+from pysubs.dal.datastore_models import MediaSubtitlesModel, SubtitleModel, MediaModel, UserModel
 from pysubs.dal.firestore import FirestoreDatastore
 from pysubs.utils.models import YouTubeVideo, ConvertedFile, Media, MediaType, MediaSource
 
@@ -14,7 +15,7 @@ def mock_ffmpeg_convert(**_) -> None:
     return None
 
 
-def mock_convert_to_mp3(_: Media) -> ConvertedFile:
+def mock_convert_to_mp3(media: Media) -> ConvertedFile:
     return ConvertedFile(local_storage_path="/file.mp3")
 
 
@@ -76,7 +77,25 @@ def mock_generate_subtitles(_, processed_data: dict) -> str:
     return "subtitle"
 
 
-def mock_get_media_info(_, video_file: UploadFile) -> Media:
+def mock_get_media_info_for_yt(_, media: Media, user: UserModel) -> Media:
+    return Media(
+        id=media.id,
+        title=media.title,
+        content=b"test content",
+        duration=timedelta(seconds=100),
+        source=media.source,
+        file_type=media.file_type,
+        local_storage_path="/testfile.mp4",
+        source_url=media.source_url,
+        thumbnail_url="https://youtube.com/testfile.jpg",
+    )
+
+
+def mock_get_media_info_for_file(_, media: Media, user: UserModel) -> Media:
+    file = BinaryIO()
+    file.write(b"12354")
+    uploaded_file = UploadFile(filename="test.mp4", file=file)
+    file.close()
     return Media(
         id=None,
         title="testfile.mp4",
@@ -85,7 +104,7 @@ def mock_get_media_info(_, video_file: UploadFile) -> Media:
         source=MediaSource.RAW_FILE,
         file_type=MediaType.MP4,
         local_storage_path="/testfile.mp4",
-        source_url="/testfile.mp4",
+        source_file=uploaded_file,
         thumbnail_url="/testfile.jpg",
     )
 
@@ -116,3 +135,7 @@ def mock_get_history_for_user(user_id, last_created_at, count):
         expire_at=datetime.now(),
     )
     return [MediaSubtitlesModel(media=media, subtitles=[subtitle])]
+
+
+def mock_make_filename_unique(filename: str) -> str:
+    return filename

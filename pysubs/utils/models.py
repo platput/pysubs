@@ -3,6 +3,7 @@ from enum import Enum, auto
 from typing import Optional
 from datetime import timedelta, datetime
 
+from fastapi import UploadFile
 from pydantic import BaseModel
 
 from pysubs.dal.datastore_models import UserModel
@@ -11,6 +12,10 @@ from pysubs.dal.datastore_models import UserModel
 # Responses
 class GeneralResponse(BaseModel):
     status: str
+
+
+class GenerateResponse(GeneralResponse):
+    media_id: str
 
 
 class VideoMetadataResponse(GeneralResponse):
@@ -58,15 +63,16 @@ class MediaSource(Enum):
 # Data
 @dataclass
 class Media:
-    id: Optional[str]
-    title: Optional[str]
-    content: Optional[bytes]
-    thumbnail_url: Optional[str]
-    source_url: str
     source: MediaSource
     file_type: MediaType
-    duration: Optional[timedelta]
-    local_storage_path: Optional[str]
+    id: Optional[str] = None
+    title: Optional[str] = None
+    content: Optional[bytes] = None
+    thumbnail_url: Optional[str] = None
+    source_url: Optional[str] = None
+    source_file: Optional[UploadFile] = None
+    duration: Optional[timedelta] = None
+    local_storage_path: Optional[str] = None
 
     @property
     def filename(self) -> str:
@@ -99,6 +105,7 @@ class VideoFile:
     content: Optional[bytes]
     thumbnail_url: Optional[str]
     local_storage_path: str
+
 
 @dataclass
 class ConvertedFile:

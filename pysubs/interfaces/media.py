@@ -3,6 +3,7 @@ from typing import Optional
 
 from fastapi import UploadFile
 
+from pysubs.dal.datastore_models import UserModel
 from pysubs.utils.models import MediaType, Media
 
 
@@ -10,13 +11,45 @@ class MediaManager(metaclass=ABCMeta):
     """
     Media manager abstract class which has to be implemented by all supported media managers like YouTube, file, aws etc.
     """
+    @staticmethod
     @abstractmethod
-    def get_media_info(self, video_url: Optional[str] = None, video_file: Optional[UploadFile] = None) -> Media:
+    def create_media(
+            video_source: Optional[str | UploadFile],
+            user: UserModel
+    ) -> Media:
+        """
+        Creates the media object which can be passed around until the subtitle is generated
+        :param video_source:
+        :param user:
+        :return:
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def generate_media_id(
+            media: Media,
+            user: UserModel,
+    ) -> str:
+        """
+        Generates the media id based on the user id and video url/file
+        :param media:
+        :param user:
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def get_media_info(
+            self,
+            media: Media,
+            user: UserModel
+    ) -> Media:
         """
         Get the information about the video as required by the media model
         The input can either be a video url or the actual uploaded video file
-        :param video_url:
-        :param video_file:
+        :param media:
+        :param user:
         :return:
         """
         pass

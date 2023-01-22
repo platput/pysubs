@@ -30,6 +30,8 @@ GOOGLE_APPLICATION_CREDENTIALS="pysubs.json"
 - [x] Reduce credit by one for each subtitle generation
 - [x] Add limits to video duration based on available credits
 - [x] Show error message when video url is invalid and user clicks the generate button
+- [ ] Feature to show the details of the subtitle which is being generated
+- [ ] Feature to disallow user to generate subtitles if one is being generated
 - [ ] Check if the video id already exists before starting to generate the subtitle
 - [ ] Add api endpoints support for subtitle translate option to different languages
 - [ ] Add support for direct links of videos
