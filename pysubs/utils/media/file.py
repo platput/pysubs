@@ -4,7 +4,7 @@ import os.path
 import tempfile
 import uuid
 from collections import OrderedDict
-from datetime import timedelta, datetime
+from datetime import timedelta
 from typing import Optional
 
 from fastapi import UploadFile
@@ -98,8 +98,14 @@ class FileMediaManager(MediaManager):
         # TODO: To be improved later using regex
         uploaded_filename = os.path.splitext(filename)
         # Sanitizing the user inputted filename
-        sanitized_filename = uploaded_filename[0].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
-        sanitized_ext = uploaded_filename[1].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
+        sanitized_filename = uploaded_filename[0].replace(
+            "&", ""
+        ).replace(
+            " ", "_"
+        ).replace("|", "").replace(";", "").replace("-", "_")
+        sanitized_ext = uploaded_filename[1].replace(
+            "&", ""
+        ).replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
         unique_filename = f"{sanitized_filename}-{uuid.uuid4().hex}{sanitized_ext}"
         return unique_filename
 

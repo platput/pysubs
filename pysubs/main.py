@@ -4,7 +4,6 @@ from fastapi import FastAPI, Request, Depends, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pytube.exceptions import RegexMatchError
-from starlette_validation_uploadfile import ValidateUploadFileMiddleware
 
 from pysubs.dal.datastore_models import UserModel
 from pysubs.dal.firestore import FirestoreDatastore

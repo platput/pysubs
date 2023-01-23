@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-import tempfile
 from collections import OrderedDict
 from datetime import datetime
 from typing import BinaryIO
@@ -52,13 +51,6 @@ class TestFileMediaManager:
             "pysubs.utils.conversion.get_base64_src_for_image",
             mock_get_base64_src_for_image
         )
-
-        uploaded_filename = os.path.splitext(uploaded_file.filename)
-        sanitized_filename = uploaded_filename[0].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
-        sanitized_ext = uploaded_filename[1].replace("&", "").replace(" ", "_").replace("|", "").replace(";", "").replace("-", "_")
-        current_timestamp = int(round(datetime.now().timestamp()))
-        video_filename = f"{sanitized_filename}-{current_timestamp}{sanitized_ext}"
-        temp_dir = tempfile.gettempdir()
         fm = FileMediaManager()
         media = fm.get_media_info(media=sample_media, user=sample_user)
         assert "data:image/jpeg;base64," in media.thumbnail_url

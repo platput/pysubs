@@ -150,4 +150,3 @@ class YouTubeMediaManager(MediaManager):
                 f"Downloading youtube video from the url: {video_url} failed with error: {e}"
             )
             raise
-

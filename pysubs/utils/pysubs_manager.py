@@ -65,7 +65,7 @@ def process_yt_video_url_and_generate_subtitles(video: Media, user: UserModel):
     transcription = get_subtitles_from_audio(audio=audio)
     logger.info(f"Audio transcription finished for the video url: {video.source_url}")
     save_transcription_attempt(audio, transcription, user)
-    logger.info(f"Saved data to datastore.")
+    logger.info("Saved data to datastore.")
 
 
 def process_uploaded_file_and_generate_subtitles(video: Media, user: UserModel):
@@ -80,7 +80,7 @@ def process_uploaded_file_and_generate_subtitles(video: Media, user: UserModel):
     transcription = get_subtitles_from_audio(audio=audio)
     logger.info(f"Audio transcription finished for the video file: {video.source_file.filename}")
     save_transcription_attempt(audio, transcription, user)
-    logger.info(f"Saved data to datastore.")
+    logger.info("Saved data to datastore.")
 
 
 def get_audio_from_yt_video(video: Media, user: UserModel) -> Media:
