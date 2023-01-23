@@ -29,8 +29,6 @@ python-multipart = "^0.0.5"
 
 [tool.poetry.dev-dependencies]
 torch = "1.13.1"
-
-[tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
 
 [build-system]
