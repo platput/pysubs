@@ -59,7 +59,6 @@ class TestFileMediaManager:
         current_timestamp = int(round(datetime.now().timestamp()))
         video_filename = f"{sanitized_filename}-{current_timestamp}{sanitized_ext}"
         temp_dir = tempfile.gettempdir()
-        local_storage_path = os.path.join(temp_dir, video_filename)
         fm = FileMediaManager()
         media = fm.get_media_info(media=sample_media, user=sample_user)
         assert "data:image/jpeg;base64," in media.thumbnail_url

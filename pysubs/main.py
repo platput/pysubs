@@ -33,12 +33,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(
-    ValidateUploadFileMiddleware,
-    app_path="/subtitles/videofile/generate",
-    max_size=250000000,
-    file_type=["video/mp4"]
-)
+# app.add_middleware(
+#     ValidateUploadFileMiddleware,
+#     app_path="/subtitles/videofile/generate",
+#     max_size=250000000,
+#     file_type=["video/mp4"]
+# )
 
 
 @app.get("/health")
@@ -72,7 +72,7 @@ async def get_status(
     logger.info(f"User found in token: {user}")
     json_data = await request.json()
     media_id = json_data.get("media_id")
-    if verify_url(video_url):
+    if verify_media_id(media_id):
         media, subtitle = get_subtitle_generation_status(media_id=media_id)
         if media and subtitle:
             return SubtitleResponse(
@@ -89,7 +89,7 @@ async def get_status(
         else:
             return SubtitleResponse(status="pending")
     else:
-        raise HTTPException(status_code=403, detail="Invalid URL")
+        raise HTTPException(status_code=403, detail="Invalid Media ID")
 
 
 @app.post("/subtitles/yt/generate")
@@ -99,7 +99,7 @@ async def generate_subtitles_for_youtube(
 ) -> GenerateResponse:
     json_data = await request.json()
     video_url = json_data.get("video_url")
-    if verify_url(video_url):
+    if video_url and verify_url(video_url):
         try:
             video_info = get_yt_media_info(video_url=video_url, user=user)
         except RegexMatchError:
@@ -154,3 +154,9 @@ def verify_url(url: str):
              "._\\+~#?&//=]*)")
     p = re.compile(regex)
     return re.search(p, url)
+
+
+def verify_media_id(media_id: str):
+    regex = r"[A-Fa-f0-9]{64}$"
+    p = re.compile(regex)
+    return re.search(p, media_id)
