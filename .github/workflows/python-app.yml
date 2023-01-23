@@ -43,3 +43,8 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+    - name: Codecov steps
+      run: |
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        ./codecov
