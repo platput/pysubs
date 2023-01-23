@@ -33,7 +33,7 @@ jobs:
         pip install pytest
         pip install flake8
         python3 -m poetry config virtualenvs.create false
-        python3 -m poetry install
+        python3 -m poetry install --without dev
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
