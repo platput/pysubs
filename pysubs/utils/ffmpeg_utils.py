@@ -40,12 +40,12 @@ def create_thumbnail(media_file_path: str) -> str:
     """
     # Get thumbnail
     # https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md
-    thumbnail_path = os.path.join(tempfile.gettempdir(), str(uuid.uuid4()))
+    thumbnail_path = os.path.join(tempfile.gettempdir(), f"{str(uuid.uuid4())}.jpg")
     ffmpeg.input(
-        thumbnail_path, ss=1
+        media_file_path, ss=1
     ).filter(
         'scale', 300, -1
     ).output(
-        "abc.jpg", vframes=1
+        thumbnail_path, vframes=1
     ).overwrite_output().run(quiet=True)
     return thumbnail_path

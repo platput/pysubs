@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, Depends, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pytube.exceptions import RegexMatchError
+from starlette_validation_uploadfile import ValidateUploadFileMiddleware
 
 from pysubs.dal.datastore_models import UserModel
 from pysubs.dal.firestore import FirestoreDatastore
@@ -140,7 +141,7 @@ async def get_user_details(
 async def upload_file_and_generate_subtitles(
         file: UploadFile,
         user: UserModel = Depends(get_current_user)
-) -> GeneralResponse:
+) -> GenerateResponse:
     media_id = start_video_file_transcribe_worker(file=file, user=user)
     return GenerateResponse(status="OK", media_id=media_id)
 

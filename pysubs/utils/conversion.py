@@ -32,5 +32,5 @@ def get_base64_src_for_image(image_filepath: str) -> str:
     # Convert image to base 64 format and save it as url
     with open(image_filepath, "rb") as image_file:
         content = image_file.read()
-        thumbnail_url = f"data:image/jpeg;base64,{base64.b64encode(content)}"
+        thumbnail_url = f"data:image/jpeg;base64,{base64.b64encode(content).decode()}"
     return thumbnail_url

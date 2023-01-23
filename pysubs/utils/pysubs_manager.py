@@ -6,7 +6,7 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
 from google.api_core.exceptions import PermissionDenied
 from pysubs.dal.datastore_models import MediaModel, SubtitleModel, UserModel
 from pysubs.dal.firestore import FirestoreDatastore
@@ -76,9 +76,9 @@ def process_uploaded_file_and_generate_subtitles(video: Media, user: UserModel):
     :return:
     """
     audio = get_audio_from_video_file(video=video, user=user)
-    logger.info(f"Audio generated for the uploaded video file: {video.source_file.filename}")
+    logger.info(f"Audio generated for the uploaded video file.")
     transcription = get_subtitles_from_audio(audio=audio)
-    logger.info(f"Audio transcription finished for the video file: {video.source_file.filename}")
+    logger.info(f"Audio transcription finished for the video file.")
     save_transcription_attempt(audio, transcription, user)
     logger.info("Saved data to datastore.")
 
@@ -105,7 +105,6 @@ def get_audio_from_video_file(video: Media, user: UserModel) -> Media:
     :return:
     """
     mgr: MediaManager = FileMediaManager()
-    video = mgr.get_media_info(media=video, user=user)
     video = mgr.download(media=video)
     audio = mgr.convert(media=video, to_type=MediaType.MP3)
     return audio
@@ -158,17 +157,22 @@ def start_youtube_transcribe_worker(video_url: str, user: UserModel) -> str:
     return media.id
 
 
-def start_video_file_transcribe_worker(file: UploadFile, user: UserModel) -> str:
+def start_video_file_transcribe_worker(file: UploadFile, user: UserModel) -> Optional[str]:
     """
     starts the worker in a separate thread
     :param file:
     :param user:
     :return:
     """
+    mgr: MediaManager = FileMediaManager()
     media = FileMediaManager.create_media(video_source=file, user=user)
-    thr = threading.Thread(target=process_uploaded_file_and_generate_subtitles, args=(media, user))
-    thr.start()
-    return media.id
+    video = mgr.get_media_info(media=media, user=user)
+    if not check_if_user_can_generate(video, user):
+        raise HTTPException(status_code=403, detail="Not enough credits to perform generation")
+    else:
+        thr = threading.Thread(target=process_uploaded_file_and_generate_subtitles, args=(video, user))
+        thr.start()
+        return video.id
 
 
 def save_transcription_attempt(audio: Media, transcription: Transcription, user: UserModel) -> None:

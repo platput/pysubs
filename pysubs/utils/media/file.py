@@ -73,11 +73,11 @@ class FileMediaManager(MediaManager):
         """
         file = media.source_file.file
         content = file.read()
-        file.close()
         temp_dir = tempfile.gettempdir()
         video_filename = FileMediaManager.make_filename_unique(filename=media.source_file.filename)
         local_storage_path = os.path.join(temp_dir, video_filename)
         file_helper.write_content_to_file(local_storage_path=local_storage_path, file_content=content)
+        file.close()
         duration = ffmpeg_utils.get_media_duration(media_file_path=local_storage_path)
         thumbnail_path = ffmpeg_utils.create_thumbnail(media_file_path=local_storage_path)
         base64_url = conversion.get_base64_src_for_image(image_filepath=thumbnail_path)
