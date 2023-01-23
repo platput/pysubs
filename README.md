@@ -1,7 +1,7 @@
 # PySubs API - OpenAI powered subtitle generator API
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/platoputhur/pysubs/blob/main/LICENSE)
 [![CodeCov](https://codecov.io/gh/platoputhur/pysubs/branch/main/graph/badge.svg)](https://codecov.io/gh/platoputhur/pysubs)
-[![GitHub Release](https://img.shields.io/github/v/release/platoputhur/pysubs)]()  
+[![GitHub Release](https://img.shields.io/github/v/release/platoputhur/pysubs.svg)](https://github.com/platoputhur/pysubs/releases)
 PySubs API  is a subtitle generator API powered by OpenAI's Whisper framework.
 
 And we are currently in beta stage. This tool currently supports YouTube video links which means if you input a video url from YouTube, it will generate subtitles and let you download the subtitle in SRT format.
